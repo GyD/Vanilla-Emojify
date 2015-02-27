@@ -67,7 +67,7 @@ class emojify extends Gdn_Plugin
      */
     private function emojiToShort(&$string, $catalog = 'unified')
     {
-        $string = str_replace(array_keys($this->getCatalog()['toShort'][$catalog]), $this->getCatalog()['toShort'][$catalog], $string);
+        $string = str_ireplace(array_keys($this->getCatalog()['toShort'][$catalog]), $this->getCatalog()['toShort'][$catalog], $string);
     }
 
     /**
@@ -102,36 +102,9 @@ class emojify extends Gdn_Plugin
      */
     public function Base_BeforeParsedownFormat_Handler($Sender)
     {
-        if ($this->canParse()) {
+         if ($this->canParse()) {
             $this->shortToEmoji($Sender->EventArguments['Result']);
-        }
-    }
-
-    /**
-     * Can we parse the string ?
-     *
-     * @return bool
-     */
-    private function canParse()
-    {
-        if (!$this->parsed && C('Plugins.Emojify.CanParse', true)) {
-            $this->parsed = true;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Short code to Emoji
-     *
-     * @param $string
-     */
-    private function shortToEmoji(&$string)
-    {
-        $test = $this->getCatalog()['toHtml'];
-        $string = str_replace(array_keys($test), $test, $string);
+         }
     }
 
     /**
@@ -148,9 +121,35 @@ class emojify extends Gdn_Plugin
     public function Base_AfterCommentFormat_Handler($Sender)
     {
         if ($this->canParse()) {
-            $this->shortToEmoji($Sender->EventArguments['Discussion']->FormatBody);
+            $this->shortToEmoji($Sender->EventArguments[$Sender->EventArguments['Type']]->FormatBody);
+        }
+    }
+
+    /**
+     * Can we parse the string ?
+     *
+     * @return bool
+     */
+    private function canParse()
+    {
+        if (!$this->parsed) {
+            $this->parsed = true;
+
+            return true;
         }
 
+        return false;
+    }
+
+    /**
+     * Short code to Emoji
+     *
+     * @param $string
+     */
+    private function shortToEmoji(&$string)
+    {
+        $test = $this->getCatalog()['toHtml'];
+        $string = str_ireplace(array_keys($test), $test, $string);
     }
 
     /**
@@ -158,7 +157,19 @@ class emojify extends Gdn_Plugin
      *
      * @param $Sender
      */
-    public function Base_BeforeCommentPreviewFormat_Handler($Sender)
+    public function Base_AfterCommentPreviewFormat_Handler($Sender)
+    {
+        if ($this->canParse()) {
+            $this->shortToEmoji($Sender->Comment->Body);
+        }
+    }
+
+    /**
+     * Convert Emoji to short code in preview
+     *
+     * @param $Sender
+     */
+    public function Base_CommentPreviewFormat_Handler($Sender)
     {
         $this->emojiToShort($Sender->Comment->Body);
     }

@@ -75,22 +75,50 @@ $json = json_decode($content, true);
 // build catalog
 $catalog = array('toShort' => array(), 'toHtml' => array());
 
+$json_processed = array();
+
 foreach ($json as $row) {
+    $current = array(
+      'unified' => $row['unified'],
+      'short_name' => $row['short_name'],
+      'short_names' => $row['short_names'],
+    );
+    if (!empty($row['variations'])) {
+        foreach ($row['variations'] as $variation_code) {
+            $variation = $current;
+            $variation['unified'] = $variation_code;
+
+            $json_processed[] = $variation;
+        }
+    }
+
+    $json_processed[] = $current;
+}
+
+foreach ($json_processed as $row) {
+
     $bytes = array(
       'unified' => format_string(unicode_bytes($row['unified'])),
-      #'docomo' => format_string(unicode_bytes($row['docomo'])),
+        #'docomo' => format_string(unicode_bytes($row['docomo'])),
     );
 
-    foreach ($row['short_names'] as $shortName) {
-        foreach ($bytes as $bytetype => $byte) {
+
+    foreach ($bytes as $bytetype => $byte) {
+        if (!isset($catalog[$bytetype][$byte])) {
+            $catalog['toShort'][$bytetype][$byte] = ':' . $row['short_name'] . ':';
+        }
+
+        foreach ($row['short_names'] as $shortName) {
             $short = ':' . $shortName . ':';
-            if (!isset($catalog[$bytetype][$byte])) {
-                $catalog['toShort'][$bytetype][$byte] = $short;
-            }
 
             if (!array_key_exists($short, $catalog['toHtml'])) {
-                $catalog['toHtml'][$short] = '&#x' . $row['unified'] .';';
+                $codes = explode('-', $row['unified']);
+
+                $html_code = '&#x' . implode(';&#x', $codes) . ';';
+
+                $catalog['toHtml'][$short] = $html_code;
             }
+
         }
     }
 }
