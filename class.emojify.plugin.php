@@ -49,6 +49,12 @@ class emojify extends Gdn_Plugin
         parent::__construct();
     }
 
+
+    public function DiscussionController_Render_Before($Sender)
+    {
+        $Sender->AddJsFile($this->GetResource('emojify.js', false, false));
+    }
+
     /**
      * @param $Sender
      */
@@ -71,7 +77,7 @@ class emojify extends Gdn_Plugin
     }
 
     /**
-     * Get the emoji catalog
+     * Get the emojify catalog
      *
      * @return array
      */
@@ -102,26 +108,8 @@ class emojify extends Gdn_Plugin
      */
     public function Base_BeforeParsedownFormat_Handler($Sender)
     {
-         if ($this->canParse()) {
-            $this->shortToEmoji($Sender->EventArguments['Result']);
-         }
-    }
-
-    /**
-     * Replace emoji short code in comments.
-     */
-    public function Base_BeforeCommentBody_Handler($Sender)
-    {
-        $this->parsed = false;
-    }
-
-    /**
-     * Replace emoji short code in comments.
-     */
-    public function Base_AfterCommentFormat_Handler($Sender)
-    {
         if ($this->canParse()) {
-            $this->shortToEmoji($Sender->EventArguments[$Sender->EventArguments['Type']]->FormatBody);
+            $this->shortToEmoji($Sender->EventArguments['Result']);
         }
     }
 
@@ -150,6 +138,24 @@ class emojify extends Gdn_Plugin
     {
         $test = $this->getCatalog()['toHtml'];
         $string = str_ireplace(array_keys($test), $test, $string);
+    }
+
+    /**
+     * Replace emojify short code in comments.
+     */
+    public function Base_BeforeCommentBody_Handler($Sender)
+    {
+        $this->parsed = false;
+    }
+
+    /**
+     * Replace emojify short code in comments.
+     */
+    public function Base_AfterCommentFormat_Handler($Sender)
+    {
+        if ($this->canParse()) {
+            $this->shortToEmoji($Sender->EventArguments[$Sender->EventArguments['Type']]->FormatBody);
+        }
     }
 
     /**
