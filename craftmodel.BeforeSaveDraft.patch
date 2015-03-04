@@ -1,0 +1,21 @@
+Index: www/applications/vanilla/models/class.draftmodel.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- www/applications/vanilla/models/class.draftmodel.php	(revision dad6dee9b35d9f32860b7b5c52a3e0cca88d69f7)
++++ www/applications/vanilla/models/class.draftmodel.php	(revision )
+@@ -161,7 +161,11 @@
+ 
+       if (ArrayValue('Sink', $FormPostValues, '') === FALSE)
+          unset($FormPostValues['Sink']);
+-         
++
++       //	Prep and fire event
++       $this->EventArguments['FormPostValues'] = &$FormPostValues;
++       $this->FireEvent('BeforeSaveDraft');
++         
+       // Validate the form posted values
+       if ($this->Validate($FormPostValues, $Insert)) {
+          $Fields = $this->Validation->SchemaValidationFields(); // All fields on the form that relate to the schema
+\ No newline at end of file
