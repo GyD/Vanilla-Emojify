@@ -1,6 +1,28 @@
 <?php
 
 /**
+ * Custom array merge recursive who do not transform non-array values into array
+ *
+ * @param array $array1
+ * @param array $array2
+ * @return array
+ */
+function array_merge_recursive_distinct(array &$array1, array &$array2)
+{
+    $merged = $array1;
+
+    foreach ($array2 as $key => &$value) {
+        if (is_array($value) && array_key_exists($key, $merged) && is_array($merged[$key])) {
+            $merged[$key] = array_merge_recursive_distinct($merged[$key], $value);
+        } else {
+            $merged[$key] = $value;
+        }
+    }
+
+    return $merged;
+}
+
+/**
  * @param $uni
  * @return string
  */
@@ -70,21 +92,36 @@ function format_string($s)
 
 // parse emoji.json
 $content = file_get_contents(__DIR__ . '/emoji.json');
-$json = json_decode($content, true);
+$emoji_json = json_decode($content, true);
+$content = file_get_contents(__DIR__ . '/emoji.alter.json');
+$emoji_alter_json = json_decode($content, true);
 
 // build catalog
 $catalog = array('toShort' => array(), 'toHtml' => array());
 
 $json_processed = array();
 
-foreach ($json as $row) {
+foreach ($emoji_json as $emoji_entry) {
+    $unified_code = $emoji_entry['unified'];
+
+    if (!array_key_exists('texts', $emoji_entry)) {
+        $emoji_entry['texts'] = array();
+    }
+
+    // alter emoji list
+    if (array_key_exists($unified_code, $emoji_alter_json)) {
+        $emoji_entry = array_merge_recursive_distinct($emoji_entry, $emoji_alter_json[$unified_code]);
+    }
+
     $current = array(
-      'unified' => $row['unified'],
-      'short_name' => $row['short_name'],
-      'short_names' => $row['short_names'],
+      'unified' => $emoji_entry['unified'],
+      'short_name' => $emoji_entry['short_name'],
+      'short_names' => $emoji_entry['short_names'],
+      'text' => $emoji_entry['text'],
+      'texts' => $emoji_entry['texts'],
     );
-    if (!empty($row['variations'])) {
-        foreach ($row['variations'] as $variation_code) {
+    if (!empty($emoji_entry['variations'])) {
+        foreach ($emoji_entry['variations'] as $variation_code) {
             $variation = $current;
             $variation['unified'] = $variation_code;
 
@@ -98,31 +135,48 @@ foreach ($json as $row) {
 /*
  *
  */
-foreach ($json_processed as $row) {
+foreach ($json_processed as $emoji_entry) {
 
     $bytes = array(
-      'unified' => format_string(unicode_bytes($row['unified'])),
+      'unified' => format_string(unicode_bytes($emoji_entry['unified'])),
         #'docomo' => format_string(unicode_bytes($row['docomo'])),
     );
 
 
     foreach ($bytes as $bytetype => $byte) {
         if (!isset($catalog[$bytetype][$byte])) {
-            $catalog['toShort'][$bytetype][$byte] = ':' . $row['short_name'] . ':';
+//            $short_code = '';
+//            if (!empty($emoji_entry['text'])) {
+//                $short_code = $emoji_entry['text'];
+//            } else {
+            $short_code = ':' . $emoji_entry['short_name'] . ':';
+//            }
+            $catalog['toShort'][$bytetype][$byte] = $short_code;
         }
 
-        foreach ($row['short_names'] as $shortName) {
+        $codes = explode('-', $emoji_entry['unified']);
+        $html_code = '&#x' . implode(';&#x', $codes) . ';';
+
+        foreach ($emoji_entry['short_names'] as $shortName) {
             $short = ':' . $shortName . ':';
 
             if (!array_key_exists($short, $catalog['toHtml'])) {
-                $codes = explode('-', $row['unified']);
-
-                $html_code = '&#x' . implode(';&#x', $codes) . ';';
-
                 $catalog['toHtml'][$short] = $html_code;
             }
 
         }
+
+//        if( !empty($emoji_entry['text'])){
+//            if (!array_key_exists($emoji_entry['text'], $catalog['toHtml'])) {
+//                $catalog['toHtml'][$emoji_entry['text']] = $html_code;
+//            }
+//        }
+//
+//        foreach ($emoji_entry['texts'] as $text) {
+//            if (!array_key_exists($text, $catalog['toHtml'])) {
+//                $catalog['toHtml'][$text] = $html_code;
+//            }
+//        }
     }
 }
 

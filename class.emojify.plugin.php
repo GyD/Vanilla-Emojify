@@ -12,7 +12,7 @@
 
 $PluginInfo['Emojify'] = array(
   'Description' => 'Allow users to use emoji in Vanilla Forums',
-  'Version' => '1.0.0',
+  'Version' => '1.0.1',
   'RequiredApplications' => array('Vanilla' => '2.1.8p2'),
   'RequiredTheme' => false,
   'RequiredPlugins' => false,
@@ -28,6 +28,15 @@ $PluginInfo['Emojify'] = array(
  */
 class emojify extends Gdn_Plugin
 {
+
+    /**
+     * Default value for canParse setting
+     */
+    const CANPARSE = true;
+    /**
+     * Default value for parseTitle setting
+     */
+    const PARSETITLE = true;
 
     /**
      * Contain emojify Catalog
@@ -49,7 +58,9 @@ class emojify extends Gdn_Plugin
         parent::__construct();
     }
 
-
+    /**
+     * @param $Sender
+     */
     public function DiscussionController_Render_Before($Sender)
     {
         $Sender->AddJsFile($this->GetResource('emojify.js', false, false));
@@ -58,11 +69,48 @@ class emojify extends Gdn_Plugin
     /**
      * @param $Sender
      */
-    public function Base_BeforeSaveDiscussion_Handler($Sender)
+    public function DiscussionModel_BeforeSaveDiscussion_Handler($Sender)
     {
-        $this->emojiToShort($Sender->EventArguments['FormPostValues']['Body']);
+        $this->RemoveEmojiBeforeSave($Sender);
+    }
 
-        return;
+    /**
+     * Replace the emojies into short code before save
+     *
+     * @param $Sender
+     */
+    public function CommentModel_BeforeSaveComment_Handler($Sender)
+    {
+        $this->RemoveEmojiBeforeSave($Sender);
+    }
+
+    /**
+     * @param $Sender
+     */
+    public function DiscussionModel_BeforeSaveDraft_Handler($Sender)
+    {
+        $this->RemoveEmojiBeforeSave($Sender);
+    }
+
+    /**
+     * Remove Emoji Before Save (For Comments, Discussions [and Draft])
+     * @param $Sender
+     */
+    private function RemoveEmojiBeforeSave(&$Sender)
+    {
+        // remove emojies from body
+        $body = GetValueR('EventArguments.FormPostValues.Body', $Sender);
+        if ($body) {
+            $this->emojiToShort($body);
+            SetValue('Body', $Sender->EventArguments['FormPostValues'], $body);
+        }
+
+        // remove emojies from title
+        $name = GetValueR('EventArguments.FormPostValues.Name', $Sender);
+        if ($name) {
+            $this->emojiToShort($name);
+            SetValue('Name', $Sender->EventArguments['FormPostValues'], $name);
+        }
     }
 
     /**
@@ -94,51 +142,55 @@ class emojify extends Gdn_Plugin
     }
 
     /**
-     * Replace the emojies into short code before save
-     *
-     * @param $Sender
-     */
-    public function Base_BeforeSaveComment_Handler($Sender)
-    {
-        $this->emojiToShort($Sender->EventArguments['FormPostValues']['Body']);
-    }
-
-    /**
-     * Replace emojify short code in comments.
-     * 
-     * @param $Sender
-     */
-    public function Base_BeforeCommentBody_Handler($Sender)
-    {
-        $this->parsed = false;
-    }
-
-    /**
      * Replace emojify short code in comments.
      *
      * @param $Sender
      */
-    public function Base_AfterCommentFormat_Handler($Sender)
+    public function DiscussionController_BeforeCommentBody_Handler($Sender)
     {
-        if ($this->canParse()) {
-            $this->shortToEmoji($Sender->EventArguments[$Sender->EventArguments['Type']]->FormatBody);
+        $this->setParsed(false);
+    }
+
+    /**
+     * @param $Sender
+     */
+    public function Base_BeforeParsedownFormat_Handler($Sender)
+    {
+        if ($this->canParse() && !$this->isParsed()) {
+            $this->shortToEmoji($Sender->EventArguments['Result']);
+            $this->setParsed(true);
         }
     }
 
     /**
-     * Can we parse the string ?
-     *
-     * @return bool
+     * Alter Discussion Title on Discussion List
+     * @param $Sender
      */
-    private function canParse()
+    public function DiscussionsController_BeforeDiscussionName_Handler($Sender)
     {
-        if (!$this->parsed) {
-            $this->parsed = true;
-
-            return true;
+        if (C('Plugins.Emojify.ParseTitle', self::PARSETITLE) && $this->canParse()) {
+            $name = GetValueR('EventArguments.Discussion.Name', $Sender);
+            if ($name) {
+                $this->shortToEmoji($name);
+                $Sender->EventArguments['Discussion']->Name = $name;
+            }
         }
+    }
 
-        return false;
+    /**
+     * Alter title on discussion page to transform colo emoji to emojies
+     *
+     * @param $Sender
+     */
+    public function DiscussionController_BeforeDiscussionOptions_Handler($Sender)
+    {
+        if (C('Plugins.Emojify.ParseTitle', self::PARSETITLE) && $this->canParse()) {
+            $name = $Sender->Data('Discussion.Name');
+            if ($name) {
+                $this->shortToEmoji($name);
+                $Sender->Data['Discussion']->Name = $name;
+            }
+        }
     }
 
     /**
@@ -153,14 +205,66 @@ class emojify extends Gdn_Plugin
     }
 
     /**
+     * Replace emojify short code in comments.
+     *
+     * @param $Sender
+     */
+    public function Base_AfterCommentFormat_Handler($Sender)
+    {
+        if ($this->canParse() && !$this->isParsed()) {
+            $modelType = GetValueR('EventArguments.Type', $Sender);
+            $formatBody = GetValueR('EventArguments.' . $modelType . '.FormatBody', $Sender);
+            if ($formatBody) {
+                $this->shortToEmoji($formatBody);
+                $Sender->EventArguments[$modelType]->FormatBody = $formatBody;
+            }
+
+            $this->setParsed(true);
+        }
+    }
+
+    /**
+     * Is body parsed
+     *
+     * @return bool
+     */
+    private function isParsed(){
+        return $this->parsed;
+    }
+
+    /**
+     * Set body as parsed
+     *
+     * @param bool $parsed
+     */
+    private function setParsed($parsed = true){
+        $this->parsed = $parsed;
+    }
+
+    /**
+     * Can we parse the string ?
+     *
+     * @return bool
+     */
+    private function canParse()
+    {
+        if (!C('Plugins.Emojify.CanParse', self::CANPARSE)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Convert Emoji to short code in preview
      *
      * @param $Sender
      */
     public function Base_AfterCommentPreviewFormat_Handler($Sender)
     {
-        if ($this->canParse()) {
+        if ($this->canParse() && !$this->isParsed()) {
             $this->shortToEmoji($Sender->Comment->Body);
+            $this->setParsed(true);
         }
     }
 
@@ -169,7 +273,7 @@ class emojify extends Gdn_Plugin
      *
      * @param $Sender
      */
-    public function Base_CommentPreviewFormat_Handler($Sender)
+    public function Base_BeforeCommentPreviewFormat_Handler($Sender)
     {
         $this->emojiToShort($Sender->Comment->Body);
     }
@@ -188,7 +292,12 @@ class emojify extends Gdn_Plugin
           'Plugins.Emojify.CanParse' => array(
             'LabelCode' => 'Transform short code into emoji',
             'Control' => 'Checkbox',
-            'Default' => true,
+            'Default' => self::CANPARSE,
+          ),
+          'Plugins.Emojify.ParseTitle' => array(
+            'LabelCode' => 'Also Transform short code into emoji into Discussion Names (titles)',
+            'Control' => 'Checkbox',
+            'Default' => self::PARSETITLE,
           ),
         ));
         $Conf->RenderAll();
