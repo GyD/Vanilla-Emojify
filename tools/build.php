@@ -86,7 +86,6 @@ function format_string($s)
         }
     }
 
-
     return $out;
 }
 
@@ -132,6 +131,8 @@ foreach ($emoji_json as $emoji_entry) {
     $json_processed[] = $current;
 }
 
+$autocomplete_json = array();
+
 /*
  *
  */
@@ -162,6 +163,7 @@ foreach ($json_processed as $emoji_entry) {
 
             if (!array_key_exists($short, $catalog['toHtml'])) {
                 $catalog['toHtml'][$short] = $html_code;
+                $autocomplete_json[$short] = $emoji_entry['unified'];
             }
 
         }
@@ -183,6 +185,16 @@ foreach ($json_processed as $emoji_entry) {
 $output = "<?php\n\n";
 $output .= '$catalog = ' . str_replace(["'", '\\\\'], ['"', '\\'], var_export($catalog, true)) . ';';
 
-$file = fopen('catalog.php', 'w+');
+$parent = realpath('../');
+print($parent);
+//
+// Write Catalog.php file
+$file = fopen($parent . '/catalog.php', 'w+');
 fwrite($file, $output);
+fclose($file);
+
+//
+// Write emojies.json for autocomplete
+$file = fopen($parent . '/js/autocomplete.json', 'w+');
+fwrite($file, json_encode($autocomplete_json));
 fclose($file);

@@ -63,7 +63,7 @@ class emojify extends Gdn_Plugin
      */
     public function DiscussionController_Render_Before($Sender)
     {
-        $Sender->AddJsFile($this->GetResource('emojify.js', false, false));
+        $Sender->AddJsFile($this->GetResource('js/emojify.js', false, false));
     }
 
     /**
