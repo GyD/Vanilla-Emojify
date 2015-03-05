@@ -51,6 +51,26 @@ class EmojifyPlugin extends Gdn_Plugin
     private $parsed = false;
 
     /**
+     * At Libraries Startup
+     * @param LibrariesPlugin $Sender
+     */
+    public function LibrariesPlugin_Startup_Handler($Sender)
+    {
+        $Sender->addLibraries(array(
+          'jquery-textcomplete' => array(
+            'version' => '0.3.9',
+            'plugin' => get_class($this),
+            'files' => array(
+              'js' => "js/jquery-textcomplete/dist/jquery.textcomplete.js",
+              'js-min' => "js/jquery-textcomplete/dist/jquery.textcomplete.min.js",
+              'css' => "js/jquery-textcomplete/dist/jquery.textcomplete.css",
+                //'css-min' => "js/jquery-textcomplete/dist/jquery.textcomplete.css",
+            ),
+          ),
+        ));
+    }
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -63,6 +83,7 @@ class EmojifyPlugin extends Gdn_Plugin
      */
     public function DiscussionController_Render_Before($Sender)
     {
+        LibrariesPlugin::AttachLibrary($Sender, 'jquery-textcomplete');
         $Sender->AddJsFile($this->GetResource('js/emojify.js', false, false));
     }
 

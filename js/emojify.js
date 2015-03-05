@@ -55,9 +55,15 @@ var emojify = {
      * @param character
      * @returns {string}
      */
-    "toImg": function (character) {
+    "characterToImg": function (character) {
+        return emojify.toImg(emojify.characterToImgUrl(character));
+    },
+    "codepointToImg": function (codePoint) {
+        return emojify.toImg(emojify.codepointToImgUrl(codePoint));
+    },
+    "toImg": function (src, attributes) {
         var img = document.createElement('img');
-        img.setAttribute('src', emojify.toImgUrl(character));
+        img.setAttribute('src', src);
         img.setAttribute('class', 'emojify');
 
         return img.outerHTML;
@@ -68,9 +74,12 @@ var emojify = {
      * @param character
      * @returns {*}
      */
-    "toImgUrl": function (character) {
+    "characterToImgUrl": function (character) {
+        return emojify.codepointToImgUrl(emojify.toCodePoint(character));
+    },
+    "codepointToImgUrl": function (codePoint) {
         var webRoot = gdn.definition('WebRoot', '');
-        var imgPath = gdn.combinePaths(webRoot, 'plugins/Emojify/images/' + emojify.toCodePoint(character) + '.png');
+        var imgPath = gdn.combinePaths(webRoot, 'plugins/Emojify/images/' + codePoint + '.png');
 
         return imgPath;
     },
@@ -104,7 +113,7 @@ var emojify = {
                  * @type {string}
                  */
                 var value = value.replace(new RegExp(emojify.regExp, 'g'), function (match) {
-                    return emojify.toImg(match);
+                    return emojify.characterToImg(match);
                 });
 
                 /**
@@ -186,3 +195,36 @@ document.addEventListener("DOMContentLoaded", function () {
         emojify.replace(getLegitTextNodes(document.body));
     }
 });
+
+if (typeof jQuery.fn.textcomplete !== 'undefined') {
+    $(document).ready(function () {
+
+        var emojies = {};
+        $.ajax({
+            'url': gdn.url('/plugins/Emojify/js/autocomplete.json'),
+            'dataType': 'json',
+            'success': function (data) {
+                emojies = data;
+            }
+        });
+
+        $('#Form_Comment #Form_Body').textcomplete([{ // emoji strategy
+            "match": /\B:([\-+\w]*)$/,
+            "index": 1,
+            "search": function (term, callback) {
+                callback($.map(emojies, function (unicode, shortCode) {
+                    return shortCode.indexOf(term) === 0 ? shortCode : null;
+                }));
+            },
+            "template": function (shortCode) {
+                if (emojify.supported()) {
+                    return '&#x' + emojies[shortCode] + ';';
+                }
+                return emojify.codepointToImg(emojies[shortCode]);
+            },
+            "replace": function (shortCode) {
+                return ':' + shortCode + ':';
+            }
+        }]);
+    });
+}

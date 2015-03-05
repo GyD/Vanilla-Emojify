@@ -152,6 +152,12 @@ foreach ($json_processed as $emoji_entry) {
 //            } else {
             $short_code = ':' . $emoji_entry['short_name'] . ':';
 //            }
+
+            /*$autocomplete_json[] = array(
+              'c' => $short_code,
+              'e' => $emoji_entry['unified'],
+            );*/ //[$short_code] = $emoji_entry['unified']
+            $autocomplete_json[$emoji_entry['short_name']] = $emoji_entry['unified'];
             $catalog['toShort'][$bytetype][$byte] = $short_code;
         }
 
@@ -163,7 +169,6 @@ foreach ($json_processed as $emoji_entry) {
 
             if (!array_key_exists($short, $catalog['toHtml'])) {
                 $catalog['toHtml'][$short] = $html_code;
-                $autocomplete_json[$short] = $emoji_entry['unified'];
             }
 
         }
