@@ -154,7 +154,7 @@ class EmojifyPlugin extends Gdn_Plugin
     /**
      * @param $Sender
      */
-    public function Base_BeforeParsedownFormat_Handler($Sender)
+    public function ParsedownPlugin_BeforeFormat_Handler($Sender)
     {
         if ($this->canParse() && !$this->isParsed()) {
             $this->shortToEmoji($Sender->EventArguments['Result']);
