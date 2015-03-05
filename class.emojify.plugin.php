@@ -26,7 +26,7 @@ $PluginInfo['Emojify'] = array(
 /**
  * Class emojify
  */
-class emojify extends Gdn_Plugin
+class EmojifyPlugin extends Gdn_Plugin
 {
 
     /**
