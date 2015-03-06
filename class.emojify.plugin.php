@@ -163,14 +163,35 @@ class EmojifyPlugin extends Gdn_Plugin
     }
 
     /**
-     * Replace emojify short code in comments.
+     * Parsedown formatter (and future supported formatters) can be called before BeforeDiscussionRender event
+     *   so be sure to reset parsed flag
      *
      * @param $Sender
      */
-    public function DiscussionController_BeforeCommentBody_Handler($Sender)
+    public function DiscussionController_BeforeDiscussionRender_Handler($Sender){
+        $this->setParsed(false);
+    }
+
+    /**
+     * Reset isParsed flag after discussion body is rendered
+     *
+     * @param $Sender
+     */
+    public function DiscussionController_AfterDiscussionBody_Handler($Sender)
     {
         $this->setParsed(false);
     }
+
+    /**
+     * Reset isParsed flag after comment body is rendered
+     *
+     * @param $Sender
+     */
+    public function DiscussionController_AfterCommentBody_Handler($Sender)
+    {
+        $this->setParsed(false);
+    }
+
 
     /**
      * @param $Sender
@@ -230,14 +251,14 @@ class EmojifyPlugin extends Gdn_Plugin
      *
      * @param $Sender
      */
-    public function Base_AfterCommentFormat_Handler($Sender)
+    public function DiscussionController_BeforeCommentBody_Handler($Sender)
     {
         if ($this->canParse() && !$this->isParsed()) {
             $modelType = GetValueR('EventArguments.Type', $Sender);
-            $formatBody = GetValueR('EventArguments.' . $modelType . '.FormatBody', $Sender);
+            $formatBody = GetValueR('EventArguments.' . $modelType . '.Body', $Sender);
             if ($formatBody) {
                 $this->shortToEmoji($formatBody);
-                $Sender->EventArguments[$modelType]->FormatBody = $formatBody;
+                $Sender->EventArguments[$modelType]->Body = $formatBody;
             }
 
             $this->setParsed(true);
