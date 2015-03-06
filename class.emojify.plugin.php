@@ -12,7 +12,7 @@
 
 $PluginInfo['Emojify'] = array(
   'Description' => 'Allow users to use emoji in Vanilla Forums',
-  'Version' => '1.0.1',
+  'Version' => '1.0.2',
   'RequiredApplications' => array('Vanilla' => '2.1.8p2'),
   'RequiredTheme' => false,
   'RequiredPlugins' => false,
@@ -108,7 +108,7 @@ class EmojifyPlugin extends Gdn_Plugin
     /**
      * @param $Sender
      */
-    public function DiscussionModel_BeforeSaveDraft_Handler($Sender)
+    public function Base_BeforeSaveDraft_Handler($Sender)
     {
         $this->RemoveEmojiBeforeSave($Sender);
     }
