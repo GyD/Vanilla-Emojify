@@ -168,7 +168,8 @@ class EmojifyPlugin extends Gdn_Plugin
      *
      * @param $Sender
      */
-    public function DiscussionController_BeforeDiscussionRender_Handler($Sender){
+    public function DiscussionController_BeforeDiscussionRender_Handler($Sender)
+    {
         $this->setParsed(false);
     }
 
@@ -211,11 +212,7 @@ class EmojifyPlugin extends Gdn_Plugin
     public function DiscussionsController_BeforeDiscussionName_Handler($Sender)
     {
         if (C('Plugins.Emojify.ParseTitle', self::PARSETITLE) && $this->canParse()) {
-            $name = GetValueR('EventArguments.Discussion.Name', $Sender);
-            if ($name) {
-                $this->shortToEmoji($name);
-                $Sender->EventArguments['Discussion']->Name = $name;
-            }
+            $this->shortToEmoji($Sender->EventArguments['Discussion']->Name);
         }
     }
 
@@ -227,11 +224,7 @@ class EmojifyPlugin extends Gdn_Plugin
     public function DiscussionController_BeforeDiscussionOptions_Handler($Sender)
     {
         if (C('Plugins.Emojify.ParseTitle', self::PARSETITLE) && $this->canParse()) {
-            $name = $Sender->Data('Discussion.Name');
-            if ($name) {
-                $this->shortToEmoji($name);
-                $Sender->Data['Discussion']->Name = $name;
-            }
+            $this->shortToEmoji($Sender->Data['Discussion']->Name);
         }
     }
 
@@ -254,13 +247,7 @@ class EmojifyPlugin extends Gdn_Plugin
     public function DiscussionController_BeforeCommentBody_Handler($Sender)
     {
         if ($this->canParse() && !$this->isParsed()) {
-            $modelType = GetValueR('EventArguments.Type', $Sender);
-            $formatBody = GetValueR('EventArguments.' . $modelType . '.Body', $Sender);
-            if ($formatBody) {
-                $this->shortToEmoji($formatBody);
-                $Sender->EventArguments[$modelType]->Body = $formatBody;
-            }
-
+            $this->shortToEmoji($Sender->EventArguments[GetValueR('EventArguments.Type', $Sender)]->Body);
             $this->setParsed(true);
         }
     }
@@ -270,7 +257,8 @@ class EmojifyPlugin extends Gdn_Plugin
      *
      * @return bool
      */
-    private function isParsed(){
+    private function isParsed()
+    {
         return $this->parsed;
     }
 
@@ -279,7 +267,8 @@ class EmojifyPlugin extends Gdn_Plugin
      *
      * @param bool $parsed
      */
-    private function setParsed($parsed = true){
+    private function setParsed($parsed = true)
+    {
         $this->parsed = $parsed;
     }
 
