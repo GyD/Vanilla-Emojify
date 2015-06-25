@@ -15,7 +15,7 @@ $PluginInfo['Emojify'] = array(
   'Version' => '1.0.2',
   'RequiredApplications' => array('Vanilla' => '2.1.8p2'),
   'RequiredTheme' => false,
-  'RequiredPlugins' => false,
+  'RequiredPlugins' => array('Libraries' => '0.0.1'),
   'SettingsUrl' => 'dashboard/settings/emojify',
   'HasLocale' => false,
   'Author' => "GyD",
